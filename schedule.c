@@ -1,0 +1,327 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+struct Burst{
+    int no;
+    int remainingTime;
+    int arrivalTime;
+};
+
+// USE THESE FUNCTIONS TO IMPLEMENT READY QUEUE
+// Priority queue functions use array implementation of min heap
+
+// mode = 0 -> add by arrival time
+// mode = 1 -> add by remaining time
+// adds a Burst item to priority queue with specified mode
+void pq_add(struct Burst arr[], int n, struct Burst item, int mode);
+
+// mode = 0 -> remove by arrival time
+// mode = 1 -> remove by remaining time
+// removes and returns most prior item from priority queue
+struct Burst pq_pop(struct Burst arr[], int n, int mode);
+
+// b1 < b2 -> return -1
+// b1 == b2 -> return 0
+// b1 > b2 -> return 1
+// mode = 0 -> compare by arrival time
+// mode = 1 -> compare by remaining time
+//compares two Burst
+int compare_bursts(struct Burst b1, struct Burst b2, int mode);
+
+// prints an array
+void arr_print(struct Burst arr[], int n);
+
+
+// The function used for FCFS and SJF
+int non_preemptive(struct Burst inputArr[], int n, int mode);
+
+int FCFS(struct Burst inputArr[], int n);
+int SJF(struct Burst inputArr[], int n);
+int SRTF(struct Burst inputArr[], int n);
+int RR(struct Burst inputArr[], int quantum, int n);
+
+int main(int argc, char* argv[])
+{
+    if(argc != 3)
+    {
+        printf("Invalid number of arguments!\n");
+        return 1;
+    }
+
+    char* inputFile = argv[1];
+    int quantum = atoi(argv[2]);
+
+
+    if(quantum < 10 || quantum > 300)
+    {
+        printf("Error! Invalid Quantum.");
+        return 1;
+    }
+
+    FILE* fptr;
+
+    if ((fptr = fopen(inputFile,"r")) == NULL){
+        printf("Error! File could not opened");
+        exit(1);
+    }
+
+    struct Burst* arr;
+    int arrSize = 10;
+    arr =(struct Burst*) malloc(arrSize * sizeof(struct Burst));
+
+    int totalNumberOfBursts = 0;
+    int n, a, r;
+    while( fscanf(fptr,"%d %d %d", &n, &a, &r) != EOF)
+    {
+        if(totalNumberOfBursts == arrSize)
+        {
+            struct Burst* arr2 = (struct Burst*) malloc(arrSize+10 * sizeof(struct Burst));
+            for(int i = 0; i < arrSize; i ++)
+                arr2[i] = arr[i];
+            free(arr);
+            arrSize += 10;
+            arr = arr2;
+        }
+
+        arr[totalNumberOfBursts].no = n;
+        arr[totalNumberOfBursts].arrivalTime = a;
+        arr[totalNumberOfBursts].remainingTime = r;
+
+        totalNumberOfBursts ++;
+    }
+
+    fclose(fptr);
+
+
+    struct Burst newArr[totalNumberOfBursts];
+
+    for(int i = 0; i < totalNumberOfBursts; i ++)
+        newArr[i] = arr[i];
+
+    free(arr);
+    //printf("Total %d bursts\n", totalNumberOfBursts);
+    printf("FCFS %d\n", FCFS(newArr, totalNumberOfBursts));
+    printf("SJF  %d\n", SJF(newArr, totalNumberOfBursts));
+    printf("SRTF %d\n", SRTF(newArr, totalNumberOfBursts));
+    printf("RR   %d\n", RR(newArr, totalNumberOfBursts, quantum));
+
+
+    return 0;
+}
+
+
+void pq_add(struct Burst arr[], int n, struct Burst item, int mode)
+{
+    arr[n] = item;
+
+    int current = n;
+
+    while(current > 0)
+    {
+        int parent = (current-1)/2;
+        //printf("%d<%d?",  arr[current].arrivalTime, arr[parent].arrivalTime);
+        if(compare_bursts(arr[current], arr[parent], mode) == -1)
+        {
+            struct Burst temp = arr[current];
+            arr[current] = arr[parent];
+            arr[parent] = temp;
+        }
+        else
+            break;
+
+        current = (current-1)/2;
+    }
+}
+
+struct Burst pq_pop(struct Burst arr[], int n, int mode)
+{
+    struct Burst toRet = arr[0];
+
+    if(n == 1)
+        return toRet;
+
+    arr[0] = arr[n-1];
+
+    n -= 1;
+    int current = 0;
+    while((current+1)*2-1 < n)
+    {
+        int left = (current+1)*2-1;
+        int right = left+1;
+
+        int most = current;
+
+        if(compare_bursts(arr[left], arr[current], mode) == -1)
+            most = left;
+
+        if(right < n && compare_bursts(arr[right], arr[most], mode) == -1)
+            most = right;
+
+        if(most == current)
+            break;
+
+        struct Burst temp = arr[most];
+        arr[most] = arr[current];
+        arr[current] = temp;
+
+        current = most;
+
+
+    }
+    return toRet;
+}
+
+int compare_bursts(struct Burst b1, struct Burst b2, int mode)
+{
+    if(mode == 0)
+    {
+        if(b1.arrivalTime < b2.arrivalTime)
+            return -1;
+        else if(b1.arrivalTime > b2.arrivalTime)
+            return 1;
+        else
+        {
+            if(b1.remainingTime < b2.remainingTime)
+                return -1;
+            else if(b1.remainingTime > b2.remainingTime)
+                return 1;
+            else
+            {
+                if(b1.no < b2.no)
+                    return -1;
+                else if(b1.no > b2.no)
+                    return 1;
+                else
+                    return 0;
+            }
+        }
+    }
+    else
+    {
+        if(b1.remainingTime < b2.remainingTime)
+            return -1;
+        else if(b1.remainingTime > b2.remainingTime)
+            return 1;
+        else
+        {
+            if(b1.arrivalTime < b2.arrivalTime)
+                return -1;
+            else if(b1.arrivalTime > b2.arrivalTime)
+                return 1;
+            else
+            {
+                if(b1.no < b2.no)
+                    return -1;
+                else if(b1.no > b2.no)
+                    return 1;
+                else
+                    return 0;
+            }
+        }
+
+    }
+}
+
+void arr_print(struct Burst arr[], int n)
+{
+    for(int i = 0; i < n; i ++)
+        printf("%d %d %d\n", arr[i].no, arr[i].arrivalTime, arr[i].remainingTime);
+    printf("\n");
+}
+
+
+int non_preemptive(struct Burst inputArr[], int n, int mode)
+{
+    struct Burst queue[n];
+
+    int readyCount = 0;
+    int time = 0;
+
+    int noNew = 0;
+    int isProcessing = 0;
+    struct Burst processing;
+
+    int sum = 0;
+    int finished = 0;
+
+    int flag;
+
+
+    while(finished < n)
+    {
+        //printf("time = %d\n", time);
+        flag = 0;
+
+        // add new arrived Bursts to ready queue
+        if(noNew == 0)
+            for(int i = 0; i < n; i ++)
+            {
+
+                if(inputArr[i].arrivalTime >= time)
+                    flag = 1;
+
+                if(inputArr[i].arrivalTime == time)
+                {
+                    pq_add(queue, readyCount, inputArr[i], mode);
+                    readyCount ++;
+                }
+            }
+
+        if(flag == 0)
+            noNew = 1;
+        // update current process
+        if(isProcessing)
+        {
+            processing.remainingTime --;
+            if(processing.remainingTime == 0)
+            {
+                printf("Process %d finished at time %d\n", processing.no, time);
+                isProcessing = 0;
+                sum += time - processing.arrivalTime;
+                printf("sum += %d\n", time - processing.arrivalTime);
+                finished ++;
+            }
+
+        }
+
+        // start to process new burst if possible
+        if(!isProcessing && readyCount > 0)
+        {
+
+            isProcessing = 1;
+            processing = pq_pop(queue, readyCount, mode);
+            printf("Process %d started at time %d\n", processing.no, time);
+            readyCount--;
+        }
+
+        time ++;
+    }
+
+    printf("sum %d\n", sum);
+    return round((float)sum / (float)n);
+
+}
+
+int FCFS(struct Burst inputArr[], int n)
+{
+    return non_preemptive(inputArr, n, 0);
+}
+
+int SJF(struct Burst inputArr[], int n)
+{
+    return non_preemptive(inputArr, n, 1);
+}
+
+int SRTF(struct Burst inputArr[], int n)
+{
+    // TODO
+    return 2;
+}
+
+int RR(struct Burst inputArr[], int quantum, int n)
+{
+    // TODO
+    return 3;
+}
