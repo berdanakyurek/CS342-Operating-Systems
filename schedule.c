@@ -5,6 +5,7 @@
 
 struct Burst{
     int no;
+    int processingTime;
     int remainingTime;
     int arrivalTime;
 };
@@ -32,7 +33,6 @@ int compare_bursts(struct Burst b1, struct Burst b2, int mode);
 
 // prints an array
 void arr_print(struct Burst arr[], int n);
-
 
 // The function used for FCFS and SJF
 int non_preemptive(struct Burst inputArr[], int n, int mode);
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 
     struct Burst* arr;
     int arrSize = 10;
-    arr =(struct Burst*) malloc(arrSize * sizeof(struct Burst));
+    arr = (struct Burst*) malloc(arrSize * sizeof(struct Burst));
 
     int totalNumberOfBursts = 0;
     int n, a, r;
@@ -87,13 +87,13 @@ int main(int argc, char* argv[])
 
         arr[totalNumberOfBursts].no = n;
         arr[totalNumberOfBursts].arrivalTime = a;
+        arr[totalNumberOfBursts].processingTime = r;
         arr[totalNumberOfBursts].remainingTime = r;
 
         totalNumberOfBursts ++;
     }
 
     fclose(fptr);
-
 
     struct Burst newArr[totalNumberOfBursts];
 
@@ -107,21 +107,22 @@ int main(int argc, char* argv[])
     printf("SRTF %d\n", SRTF(newArr, totalNumberOfBursts));
     printf("RR   %d\n", RR(newArr, totalNumberOfBursts, quantum));
 
-
     return 0;
 }
-
 
 void pq_add(struct Burst arr[], int n, struct Burst item, int mode)
 {
     arr[n] = item;
 
+    if(mode == 2) return;
+
     int current = n;
 
     while(current > 0)
     {
-        int parent = (current-1)/2;
+        int parent = (current - 1) / 2;
         //printf("%d<%d?",  arr[current].arrivalTime, arr[parent].arrivalTime);
+
         if(compare_bursts(arr[current], arr[parent], mode) == -1)
         {
             struct Burst temp = arr[current];
@@ -131,7 +132,7 @@ void pq_add(struct Burst arr[], int n, struct Burst item, int mode)
         else
             break;
 
-        current = (current-1)/2;
+        current = (current - 1) / 2;
     }
 }
 
@@ -141,15 +142,23 @@ struct Burst pq_pop(struct Burst arr[], int n, int mode)
 
     if(n == 1)
         return toRet;
+    
+    if(mode == 2) {
+        for(int i = 0; i < n - 1; i++) {
+            arr[i] = arr[i + 1];
+        }
+
+        return toRet;
+    }
 
     arr[0] = arr[n-1];
 
     n -= 1;
     int current = 0;
-    while((current+1)*2-1 < n)
+    while((current + 1) * 2 - 1 < n)
     {
-        int left = (current+1)*2-1;
-        int right = left+1;
+        int left = (current + 1) * 2 - 1;
+        int right = left + 1;
 
         int most = current;
 
@@ -167,8 +176,6 @@ struct Burst pq_pop(struct Burst arr[], int n, int mode)
         arr[current] = temp;
 
         current = most;
-
-
     }
     return toRet;
 }
@@ -231,7 +238,6 @@ void arr_print(struct Burst arr[], int n)
     printf("\n");
 }
 
-
 int non_preemptive(struct Burst inputArr[], int n, int mode)
 {
     struct Burst queue[n];
@@ -247,7 +253,6 @@ int non_preemptive(struct Burst inputArr[], int n, int mode)
     int finished = 0;
 
     int flag;
-
 
     while(finished < n)
     {
@@ -316,12 +321,141 @@ int SJF(struct Burst inputArr[], int n)
 
 int SRTF(struct Burst inputArr[], int n)
 {
-    // TODO
-    return 2;
+    struct Burst queue[n];
+
+    int readyCount = 0;
+    int time = 0;
+
+    int isProcessing = 0;
+    struct Burst processing;
+
+    int waitingTime = 0;
+    int finished = 0;
+
+    int flag;
+
+    while(finished < n)
+    {
+        flag = 0;
+
+        for(int i = 0; i < n; i++)
+        {
+            if(inputArr[i].arrivalTime == time)
+            {
+                flag = 1;
+                pq_add(queue, readyCount, inputArr[i], 1);
+                readyCount++;
+            }
+        }
+
+        if(flag) {
+            if(isProcessing) {
+                printf("Process %d paused processing at time %d, remaining time: %d\n", processing.no, time, processing.remainingTime);
+                pq_add(queue, readyCount, processing, 1);
+                readyCount++;
+            }
+            
+            processing = pq_pop(queue, readyCount, 1);
+            isProcessing = 1;
+            readyCount--;
+
+            printf("Process %d started processing at time %d\n", processing.no, time);
+        }
+
+        // update current process
+        if(isProcessing)
+        {
+            processing.remainingTime--;
+
+            if(processing.remainingTime == 0)
+            {
+                printf("Process %d finished at time %d\n", processing.no, time + 1);
+                isProcessing = 0;
+                waitingTime += time + 1 - processing.arrivalTime - processing.processingTime;
+                printf("Waiting Time: %d\n", waitingTime);
+                finished++;
+            }
+        }
+
+        // start to process new burst if possible
+        if(!isProcessing && readyCount > 0)
+        {
+            isProcessing = 1;
+            processing = pq_pop(queue, readyCount, 1);
+            
+            printf("Process %d started at time %d\n", processing.no, time + 1);
+            readyCount--;
+        }
+
+        time ++;
+    }
+
+    printf("Waiting Time %d\n", waitingTime);
+    return round((float) waitingTime / (float) n);
 }
 
-int RR(struct Burst inputArr[], int quantum, int n)
+int RR(struct Burst inputArr[], int n, int quantum)
 {
-    // TODO
-    return 3;
+    struct Burst queue[n];
+    
+    int readyCount = 0;
+    int time = 0;
+
+    int isProcessing = 0;
+    struct Burst processing;
+
+    int waitingTime = 0;
+    int finished = 0;
+
+    int remainingQuantum;
+
+    while(finished < n)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            if(inputArr[i].arrivalTime == time)
+            {
+                pq_add(queue, readyCount, inputArr[i], 2);
+                readyCount++;
+            }
+        }
+
+        // start to process new burst if possible
+        if(!isProcessing && readyCount > 0)
+        {
+            isProcessing = 1;
+            processing = pq_pop(queue, readyCount, 2);
+            remainingQuantum = quantum;
+
+            printf("Process %d started at time %d\n", processing.no, time);
+            readyCount--;
+        }
+
+        // update current process
+        if(isProcessing)
+        {
+            processing.remainingTime--;
+            remainingQuantum--;
+            
+            if(processing.remainingTime == 0)
+            {
+                printf("Process %d finished at time %d\n", processing.no, time + 1);
+                isProcessing = 0;
+                waitingTime += time + 1 - processing.arrivalTime - processing.processingTime;
+                printf("Waiting Time: %d\n", waitingTime);
+                finished++;
+            }
+            else if(remainingQuantum == 0) {
+                printf("Process %d paused at time %d\n", processing.no, time + 1);
+                isProcessing = 0;
+                pq_add(queue, readyCount, processing, 2);
+                readyCount++;
+            }
+        }
+
+        time ++;
+    }
+
+    printf("Waiting Time %d\n", waitingTime);
+    return round((float) waitingTime / (float) n);
 }
