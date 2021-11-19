@@ -60,35 +60,28 @@ int main(int argc, char* argv[])
 
     if(quantum < 10 || quantum > 300)
     {
-        printf("Error! Invalid Quantum.");
+        printf("Error! Invalid Quantum.\n");
         return 1;
     }
 
     FILE* fptr;
 
     if ((fptr = fopen(inputFile,"r")) == NULL){
-        printf("Error! File could not opened");
+        printf("Error! File could not opened\n");
         exit(1);
     }
 
-    struct Burst* arr;
-    int arrSize = 10;
-    arr = (struct Burst*) malloc(arrSize * sizeof(struct Burst));
+    //struct Burst* arr;
+    //int arrSize = 10;
+
+    struct Burst arr[1000];
+    //arr = (struct Burst*) malloc(arrSize * sizeof(struct Burst));
 
     int totalNumberOfBursts = 0;
     int n, a, r;
-    while( fscanf(fptr,"%d %d %d", &n, &a, &r) != EOF)
+    while( fscanf(fptr,"%d %d %d", &n, &a, &r) != EOF
+           && totalNumberOfBursts < 1000)
     {
-        if(totalNumberOfBursts == arrSize)
-        {
-            struct Burst* arr2 = (struct Burst*) malloc(arrSize+10 * sizeof(struct Burst));
-            for(int i = 0; i < arrSize; i ++)
-                arr2[i] = arr[i];
-            free(arr);
-            arrSize += 10;
-            arr = arr2;
-        }
-
         arr[totalNumberOfBursts].no = n;
         arr[totalNumberOfBursts].arrivalTime = a;
         //arr[totalNumberOfBursts].processingTime = r;
@@ -99,17 +92,11 @@ int main(int argc, char* argv[])
 
     fclose(fptr);
 
-    struct Burst newArr[totalNumberOfBursts];
-
-    for(int i = 0; i < totalNumberOfBursts; i ++)
-        newArr[i] = arr[i];
-
-    free(arr);
     //printf("Total %d bursts\n", totalNumberOfBursts);
-    printf("FCFS %d\n", FCFS(newArr, totalNumberOfBursts));
-    printf("SJF  %d\n", SJF(newArr, totalNumberOfBursts));
-    printf("SRTF %d\n", SRTF(newArr, totalNumberOfBursts));
-    printf("RR   %d\n", RR(newArr, totalNumberOfBursts, quantum));
+    printf("FCFS %d\n", FCFS(arr, totalNumberOfBursts));
+    printf("SJF  %d\n", SJF(arr, totalNumberOfBursts));
+    printf("SRTF %d\n", SRTF(arr, totalNumberOfBursts));
+    printf("RR   %d\n", RR(arr, totalNumberOfBursts, quantum));
 
     return 0;
 }
