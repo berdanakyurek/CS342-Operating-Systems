@@ -1,7 +1,7 @@
 /*
 CS342 Project 2
-Samir Suleymanli 21701377
 Berdan Akyurek 21600904
+Samir Suleymanli 21701377
 */
 
 #include <stdio.h>
@@ -19,11 +19,13 @@ struct Burst{
 
 // mode = 0 -> add by arrival time
 // mode = 1 -> add by remaining time
+// mode = 2 -> add to the end of the queue
 // adds a Burst item to priority queue with specified mode
 void pq_add(struct Burst arr[], int n, struct Burst item, int mode);
 
 // mode = 0 -> remove by arrival time
 // mode = 1 -> remove by remaining time
+// mode = 2 -> remove the first element
 // removes and returns most prior item from priority queue
 struct Burst pq_pop(struct Burst arr[], int n, int mode);
 
@@ -32,7 +34,7 @@ struct Burst pq_pop(struct Burst arr[], int n, int mode);
 // b1 > b2 -> return 1
 // mode = 0 -> compare by arrival time
 // mode = 1 -> compare by remaining time
-//compares two Burst
+// compares two Burst
 int compare_bursts(struct Burst b1, struct Burst b2, int mode);
 
 // prints an array
@@ -71,20 +73,14 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    //struct Burst* arr;
-    //int arrSize = 10;
-
     struct Burst arr[1000];
-    //arr = (struct Burst*) malloc(arrSize * sizeof(struct Burst));
 
     int totalNumberOfBursts = 0;
     int n, a, r;
-    while( fscanf(fptr,"%d %d %d", &n, &a, &r) != EOF
-           && totalNumberOfBursts < 1000)
+    while( fscanf(fptr,"%d %d %d", &n, &a, &r) != EOF && totalNumberOfBursts < 1000)
     {
         arr[totalNumberOfBursts].no = n;
         arr[totalNumberOfBursts].arrivalTime = a;
-        //arr[totalNumberOfBursts].processingTime = r;
         arr[totalNumberOfBursts].remainingTime = r;
 
         totalNumberOfBursts ++;
@@ -92,7 +88,6 @@ int main(int argc, char* argv[])
 
     fclose(fptr);
 
-    //printf("Total %d bursts\n", totalNumberOfBursts);
     printf("FCFS %d\n", FCFS(arr, totalNumberOfBursts));
     printf("SJF  %d\n", SJF(arr, totalNumberOfBursts));
     printf("SRTF %d\n", SRTF(arr, totalNumberOfBursts));
@@ -112,7 +107,6 @@ void pq_add(struct Burst arr[], int n, struct Burst item, int mode)
     while(current > 0)
     {
         int parent = (current - 1) / 2;
-        //printf("%d<%d?",  arr[current].arrivalTime, arr[parent].arrivalTime);
 
         if(compare_bursts(arr[current], arr[parent], mode) == -1)
         {
@@ -240,14 +234,13 @@ int non_preemptive(struct Burst inputArr[], int n, int mode)
     int isProcessing = 0;
     struct Burst processing;
 
-    int sum = 0;
+    int turnaroundTime = 0;
     int finished = 0;
 
     int flag;
 
     while(finished < n)
     {
-        //printf("time = %d\n", time);
         flag = 0;
 
         // add new arrived Bursts to ready queue
@@ -275,8 +268,8 @@ int non_preemptive(struct Burst inputArr[], int n, int mode)
             {
                 //printf("Process %d finished at time %d\n", processing.no, time);
                 isProcessing = 0;
-                sum += time - processing.arrivalTime;
-                //printf("sum += %d\n", time - processing.arrivalTime);
+                turnaroundTime += time - processing.arrivalTime;
+                //printf("turnaroundTime += %d\n", time - processing.arrivalTime);
                 finished ++;
             }
 
@@ -295,8 +288,8 @@ int non_preemptive(struct Burst inputArr[], int n, int mode)
         time ++;
     }
 
-    //printf("sum %d\n", sum);
-    return round((float)sum / (float)n);
+    //printf("turnaroundTime: %d\n", turnaroundTime);
+    return round((float)turnaroundTime / (float)n);
 
 }
 
@@ -320,7 +313,7 @@ int SRTF(struct Burst inputArr[], int n)
     int isProcessing = 0;
     struct Burst processing;
 
-    int waitingTime = 0;
+    int turnaroundTime = 0;
     int finished = 0;
 
     int flag;
@@ -362,8 +355,8 @@ int SRTF(struct Burst inputArr[], int n)
             {
                 //printf("Process %d finished at time %d\n", processing.no, time + 1);
                 isProcessing = 0;
-                waitingTime += time + 1 - processing.arrivalTime;
-                //printf("Waiting Time: %d\n", waitingTime);
+                turnaroundTime += time + 1 - processing.arrivalTime;
+                //printf("turnaroundTime: %d\n", turnaroundTime);
                 finished++;
             }
         }
@@ -378,11 +371,11 @@ int SRTF(struct Burst inputArr[], int n)
             readyCount--;
         }
 
-        time ++;
+        time++;
     }
 
-    //printf("Waiting Time %d\n", waitingTime);
-    return round((float) waitingTime / (float) n);
+    //printf("turnaroundTime: %d\n", turnaroundTime);
+    return round((float) turnaroundTime / (float) n);
 }
 
 int RR(struct Burst inputArr[], int n, int quantum)
@@ -395,7 +388,7 @@ int RR(struct Burst inputArr[], int n, int quantum)
     int isProcessing = 0;
     struct Burst processing;
 
-    int waitingTime = 0;
+    int turnaroundTime = 0;
     int finished = 0;
 
     int remainingQuantum;
@@ -432,8 +425,8 @@ int RR(struct Burst inputArr[], int n, int quantum)
             {
                 //printf("Process %d finished at time %d\n", processing.no, time + 1);
                 isProcessing = 0;
-                waitingTime += time + 1 - processing.arrivalTime;
-                //printf("Waiting Time: %d\n", waitingTime);
+                turnaroundTime += time + 1 - processing.arrivalTime;
+                //printf("turnaroundTime: %d\n", turnaroundTime);
                 finished++;
             }
             else if(remainingQuantum == 0) {
@@ -447,6 +440,6 @@ int RR(struct Burst inputArr[], int n, int quantum)
         time ++;
     }
 
-    //printf("Waiting Time %d\n", waitingTime);
-    return round((float) waitingTime / (float) n);
+    //printf("turnaroundTime: %d\n", turnaroundTime);
+    return round((float) turnaroundTime / (float) n);
 }
