@@ -92,6 +92,14 @@ void* philFunction(void* p)
     else
         chopstickR = philNumber + 1;
 
+    // Deadlock avoidance
+    if(philNumber % 2 == 0)
+    {
+        int temp = chopstickL;
+        chopstickL = chopstickR;
+        chopstickR = temp;
+    }
+
     // stTime is same for all threads
     // It depends on time on main thread
     // However philNumber is different for each thread
@@ -102,7 +110,7 @@ void* philFunction(void* p)
 
     while(1)
     {
-        // Philosopher starts hungry
+        // Philosopher is hungry]
         pthread_mutex_lock(&chopsticks[chopstickL]);
         pthread_mutex_lock(&chopsticks[chopstickR]);
 
@@ -115,8 +123,6 @@ void* philFunction(void* p)
 
         //Thinking phase
         sleep(randomNumber(1, 10));
-
     }
-
     pthread_exit(&test);
 }
