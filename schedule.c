@@ -9,7 +9,8 @@ Samir Suleymanli 21701377
 #include <string.h>
 #include <math.h>
 
-struct Burst{
+struct Burst
+{
     int no;
     int remainingTime;
     int arrivalTime;
