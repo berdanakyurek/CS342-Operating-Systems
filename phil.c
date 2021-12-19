@@ -18,7 +18,7 @@ void* philFunction(void* p);
 int test = 0;
 
 const int NUMBER_OF_PHILOSOPHERS = 5;
-pthread_mutex_t chopsticks[5];
+pthread_mutex_t mutex;
 pthread_cond_t conds[5];
 
 // 0 if chopstick[n] available.
@@ -32,9 +32,8 @@ int main()
     /*     printf("%f\n", randomNumber(1, 10)); */
     pthread_t threads[NUMBER_OF_PHILOSOPHERS];
 
-    // Init mutexes
-    for(int i = 0; i < NUMBER_OF_PHILOSOPHERS; i ++)
-        pthread_mutex_init(&chopsticks[i], NULL);
+    // Init mutex
+    pthread_mutex_init(&mutex, NULL);
 
     // Init condition variables
     for(int i = 0; i < NUMBER_OF_PHILOSOPHERS; i ++)
@@ -67,9 +66,8 @@ int main()
     for (int i = 0; i < NUMBER_OF_PHILOSOPHERS; i++)
         pthread_join(threads[i], NULL);
 
+    pthread_mutex_destroy(&mutex);
 
-    for(int i = 0; i < NUMBER_OF_PHILOSOPHERS; i ++)
-        pthread_mutex_destroy(&chopsticks[i]);
     for(int i = 0; i < NUMBER_OF_PHILOSOPHERS; i ++)
         pthread_cond_destroy(&conds[i]);
     return 0;
@@ -107,23 +105,6 @@ void* philFunction(void* p)
     else
         chopstickR = philNumber + 1;
 
-    int leftPhil = philNumber - 1;
-    int rightPhil = philNumber + 1;
-    if(rightPhil == NUMBER_OF_PHILOSOPHERS)
-        rightPhil = 0;
-
-    // Deadlock avoidance
-    if(philNumber % 2 == 0)
-    {
-        int temp = chopstickL;
-        chopstickL = chopstickR;
-        chopstickR = temp;
-
-        temp = leftPhil;
-        leftPhil = rightPhil;
-        rightPhil = temp;
-    }
-
     // stTime is same for all threads
     // It depends on time on main thread
     // However philNumber is different for each thread
@@ -135,32 +116,26 @@ void* philFunction(void* p)
     while(1)
     {
         // Philosopher is hungry
+        pthread_mutex_lock(&mutex);
 
-        if(chopStates[chopstickL] == 1)
-        {
-            pthread_cond_wait(&conds[chopstickL], &chopsticks[chopstickL]);
-        }
-        chopStates[chopstickL] = 0;
-        pthread_mutex_lock(&chopsticks[chopstickL]);
+        while(chopStates[chopstickL] == 1 || chopStates[chopstickR] == 1)
+            pthread_cond_wait(&conds[chopstickL], &mutex);
 
-        if(chopStates[chopstickR] == 1)
-        {
-            pthread_cond_wait(&conds[chopstickR], &chopsticks[chopstickR]);
-        }
-        chopStates[chopstickR] = 0;
-        pthread_mutex_lock(&chopsticks[chopstickR]);
+        chopStates[chopstickL] = 1;
+        chopStates[chopstickR] = 1;
+
+        pthread_mutex_unlock(&mutex);
 
         printf("philosopher %d started eating now.\n", philNumber);
         sleep(randomNumber(1, 5));
         printf("philosopher %d finished eating now.\n", philNumber);
 
-        pthread_mutex_unlock(&chopsticks[chopstickR]);
-        pthread_cond_signal(&conds[chopstickR]);
-        chopStates[chopstickR] = 0;
 
-        pthread_mutex_unlock(&chopsticks[chopstickL]);
-        pthread_cond_signal(&conds[chopstickL]);
+        chopStates[chopstickR] = 0;
+        pthread_cond_signal(&conds[chopstickR]);
+
         chopStates[chopstickL] = 0;
+        pthread_cond_signal(&conds[chopstickL]);
 
         //Thinking phase
         sleep(randomNumber(1, 10));
