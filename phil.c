@@ -20,6 +20,9 @@ int test = 0;
 const int NUMBER_OF_PHILOSOPHERS = 5;
 pthread_mutex_t chopsticks[5];
 pthread_cond_t conds[5];
+
+// 0 if chopstick[n] available.
+// 1 if occupied
 int chopStates[5];
 
 int main()
@@ -137,15 +140,15 @@ void* philFunction(void* p)
         {
             pthread_cond_wait(&conds[chopstickL], &chopsticks[chopstickL]);
         }
-        pthread_mutex_lock(&chopsticks[chopstickL]);
         chopStates[chopstickL] = 0;
+        pthread_mutex_lock(&chopsticks[chopstickL]);
 
         if(chopStates[chopstickR] == 1)
         {
             pthread_cond_wait(&conds[chopstickR], &chopsticks[chopstickR]);
         }
-        pthread_mutex_lock(&chopsticks[chopstickR]);
         chopStates[chopstickR] = 0;
+        pthread_mutex_lock(&chopsticks[chopstickR]);
 
         printf("philosopher %d started eating now.\n", philNumber);
         sleep(randomNumber(1, 5));
