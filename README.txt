@@ -1,4 +1,3 @@
-
 Berdan Akyurek
 21600904
 
