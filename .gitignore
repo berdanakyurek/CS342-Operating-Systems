@@ -1,5 +1,6 @@
 *.txt
 *.out
 *.o
+.vscode/*
 Project3.pdf
 phil

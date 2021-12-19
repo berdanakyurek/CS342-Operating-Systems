@@ -33,9 +33,6 @@ int chopStates[5];
 
 int main()
 {
-
-    /* for(int i = 0; i < 5; i ++) */
-    /*     printf("%f\n", randomNumber(1, 10)); */
     pthread_t threads[NUMBER_OF_PHILOSOPHERS];
 
     // Init mutex
@@ -51,7 +48,6 @@ int main()
     int currentTime = time(NULL);
     struct threadArg args[NUMBER_OF_PHILOSOPHERS];
 
-
     for(int i = 0; i < NUMBER_OF_PHILOSOPHERS; i ++)
     {
         args[i].stTime = currentTime;
@@ -62,11 +58,10 @@ int main()
                                  &args[i] );
         if (ret != 0)
         {
-            printf("Thread create failed \n");
+            printf("Thread create failed!\n");
             exit(1);
         }
     }
-
 
     // Wait for child threads to terminate
     for (int i = 0; i < NUMBER_OF_PHILOSOPHERS; i++)
@@ -116,7 +111,7 @@ void* philFunction(void* p)
     // However philNumber is different for each thread
     // So it is guaranteed that seed is different for each thread
     // Also it is guaranteed that it will be undeterministic
-    //Since seed depends on time
+    // Since seed depends on time
     srand(stTime + philNumber);
 
     while(1)
@@ -132,16 +127,14 @@ void* philFunction(void* p)
                 pthread_cond_wait(&conds[chopstickR], &mutex);
         }
 
-
         chopStates[chopstickL] = 1;
         chopStates[chopstickR] = 1;
 
         pthread_mutex_unlock(&mutex);
 
-        printf("philosopher %d started eating now.\n", philNumber);
+        printf("Philosopher %d started eating now.\n", philNumber);
         sleep(randomNumber(1, 5));
-        printf("philosopher %d finished eating now.\n", philNumber);
-
+        printf("Philosopher %d finished eating now.\n", philNumber);
 
         pthread_mutex_lock(&mutex);
 
@@ -153,7 +146,7 @@ void* philFunction(void* p)
 
         pthread_mutex_unlock(&mutex);
 
-        //Thinking phase
+        // Thinking phase
         sleep(randomNumber(1, 10));
     }
     pthread_exit(&test);
