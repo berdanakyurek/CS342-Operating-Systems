@@ -143,11 +143,15 @@ void* philFunction(void* p)
         printf("philosopher %d finished eating now.\n", philNumber);
 
 
+        pthread_mutex_lock(&mutex);
+
         chopStates[chopstickR] = 0;
         pthread_cond_signal(&conds[chopstickR]);
 
         chopStates[chopstickL] = 0;
         pthread_cond_signal(&conds[chopstickL]);
+
+        pthread_mutex_unlock(&mutex);
 
         //Thinking phase
         sleep(randomNumber(1, 10));
