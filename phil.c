@@ -119,7 +119,13 @@ void* philFunction(void* p)
         pthread_mutex_lock(&mutex);
 
         while(chopStates[chopstickL] == 1 || chopStates[chopstickR] == 1)
-            pthread_cond_wait(&conds[chopstickL], &mutex);
+        {
+            if(chopStates[chopstickL] == 1)
+                pthread_cond_wait(&conds[chopstickL], &mutex);
+            if(chopStates[chopstickR] == 1)
+                pthread_cond_wait(&conds[chopstickR], &mutex);
+        }
+
 
         chopStates[chopstickL] = 1;
         chopStates[chopstickR] = 1;
