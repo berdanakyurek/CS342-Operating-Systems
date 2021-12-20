@@ -150,6 +150,7 @@ void* philFunction(void* p)
 
         // Thinking phase
         sleep(randomNumber(1, 10, &seed));
+
     }
     pthread_exit(&test);
 }
