@@ -19,7 +19,7 @@ struct threadArg
 // This function creates a random number
 // In range [min, max] somehow uniformly
 // See function definition below for details
-double randomNumber(int min, int max);
+double randomNumber(int min, int max, unsigned int* state);
 void* philFunction(void* p);
 int test = 0;
 
@@ -74,9 +74,9 @@ int main()
     return 0;
 }
 
-double randomNumber(int min, int max)
+double randomNumber(int min, int max, unsigned int* state)
 {
-    int rn = rand(); // Random and uniform in range [0, RAND_MAX]
+    int rn = rand_r(state); // Random and uniform in range [0, RAND_MAX]
 
     // step satisfies min + k * step  is between min and max
     // for k in range [0, RAND_MAX]
@@ -92,6 +92,8 @@ double randomNumber(int min, int max)
 
 void* philFunction(void* p)
 {
+
+
     struct threadArg* pointer = (struct threadArg*) p;
 
 
@@ -112,7 +114,7 @@ void* philFunction(void* p)
     // So it is guaranteed that seed is different for each thread
     // Also it is guaranteed that it will be undeterministic
     // Since seed depends on time
-    srand(stTime + philNumber);
+    unsigned int seed = stTime + philNumber;
 
     while(1)
     {
@@ -133,7 +135,7 @@ void* philFunction(void* p)
         pthread_mutex_unlock(&mutex);
 
         printf("Philosopher %d started eating now.\n", philNumber);
-        sleep(randomNumber(1, 5));
+        sleep(randomNumber(1, 5, &seed));
         printf("Philosopher %d finished eating now.\n", philNumber);
 
         pthread_mutex_lock(&mutex);
@@ -147,7 +149,7 @@ void* philFunction(void* p)
         pthread_mutex_unlock(&mutex);
 
         // Thinking phase
-        sleep(randomNumber(1, 10));
+        sleep(randomNumber(1, 10, &seed));
     }
     pthread_exit(&test);
 }
